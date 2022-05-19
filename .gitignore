@@ -1,2 +1,5 @@
 original-dataset/
+neo4j_csvs/
 .ipynb_checkpoints/
+tag_scores_matrix.npy
+create_nodes.txt

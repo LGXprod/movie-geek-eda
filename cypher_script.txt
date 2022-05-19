@@ -1,0 +1,43 @@
+load csv with headers from 'file:///movie_tags.csv' as row with row where row.movieId is not null 
+merge (m:Movie {id: row.movieId, title: row.movieTitle})
+merge (g:Genre {id: row.genreId, name: row.genreName})
+merge (m)-[:Genre_OF {name: "the genre of"}]-(g);
+
+load csv with headers from 'file:///movie_tags.csv' as row with row where row.tagId is not null 
+merge (m:Movie {id: row.movieId})
+merge (t:Tag {id: row.tagId, name: row.tagName})
+merge (t)-[:Tag_OF {name: "the tag of"}]-(m);
+
+
+// tag has its own type of rel type know which is Tag_OF
+
+match (m:Movie)-[:Genre_OF]-(t:Tag) return (m), (t);
+
+match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(t2:Tag) where t.id = "643" return (m), (t), (t2);
+
+match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(t2:Tag)-[:Genre_OF]-(m2:Movie) where t.id = "643" return (m), (t), (t2), (m2);
+
+match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(g:Genre) where t.id = "643" return (m), (t), (g);
+
+match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(g:Genre) where t.id = "643" call { with g match (g)-[:Genre_OF]-(m2:Movie) return m2 limit 10 } return m, t, g, m2;
+
+// the below query returns 10-25 movies (5 directly connected to the tag, 5-20 movies connected by 2nd hop genre)
+// (this assumes that each tag has >=5 movies connected which I believe is true)
+match (t:Tag) where t.id = "643" call { with t match (t)-[:Tag_OF]-(m:Movie) return m limit 5 } call { with m match (m)-[:Genre_OF]-(g:Genre) return g limit 2 } call { with g match (g)-[:Genre_OF]-(m2:Movie) return m2 limit 2 } return m, t, g, m2;
+
+:server status;
+show current user;
+
+neo4j-admin load --from=/var/lib/neo4j/import/mg-db.dump --database=movieGeek -
+-force
+
+docker run \
+    --name mg_neo4j \
+    -p7474:7474 -p7687:7687 \
+    -d \
+    -v $HOME/mg_neo4j/data:/data \
+    -v $HOME/mg_neo4j/logs:/logs \
+    -v $HOME/mg_neo4j/import:/var/lib/neo4j/import \
+    -v $HOME/mg_neo4j/plugins:/plugins \
+    --env NEO4J_AUTH=neo4j/test \
+    neo4j:latest
