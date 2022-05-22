@@ -13,9 +13,11 @@ merge (t)-[:Tag_OF {name: "the tag of"}]-(m);
 
 match (m:Movie)-[:Genre_OF]-(t:Tag) return (m), (t);
 
-match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(t2:Tag) where t.id = "643" return (m), (t), (t2);
+match (t:Tag)-[:Tag_OF]-(m:Movie)-[:Tag_OF]-(t2:Tag) where t.id = "643" return (m), (t), (t2);
 
-match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(t2:Tag)-[:Genre_OF]-(m2:Movie) where t.id = "643" return (m), (t), (t2), (m2);
+match (t:Tag)-[:Tag_OF]-(m:Movie)-[:Tag_OF]-(t2:Tag)-[:Tag_OF]-(m2:Movie) where t.id = "643" return (m), (t), (t2), (m2);
+
+match (t:Tag) where t.id = "643" call { with t match (t)-[:Tag_OF]-(m:Movie) return m limit 5 } call { with m match (m)-[:Tag_OF]-(t2:Tag) return t2 limit 2 } call { with t2 match (t2)-[:Tag_OF]-(m2:Movie) return m2 limit 2 } return m, t, t2, m2;
 
 match (t:Tag)-[:Genre_OF]-(m:Movie)-[:Genre_OF]-(g:Genre) where t.id = "643" return (m), (t), (g);
 
